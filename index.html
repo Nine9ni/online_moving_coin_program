@@ -252,7 +252,8 @@
       font-weight: bold;
     }
 
-    .field input {
+    .field input,
+    .field select {
       box-sizing: border-box;
       width: 100%;
       padding: 10px 12px;
@@ -357,9 +358,11 @@
     #consent-screen h2 { font-size: 19px; margin-top: 28px; }
     #consent-screen p { line-height: 1.6; }
     #consent-screen .consent-agreement { display: flex; align-items: flex-start; gap: 10px; line-height: 1.6; }
-    #consent-confirmed { width: auto; flex: 0 0 auto; margin-top: 6px; }
-    #consent-screen .consent-datetime { display: flex; flex-wrap: wrap; gap: 20px; }
-    #consent-screen .consent-datetime .field { flex: 1; min-width: 180px; }
+    #consent-screen input[name="consent-choice"] { width: auto; flex: 0 0 auto; margin-top: 6px; }
+    #consent-screen .consent-choice-group { border: 0; padding: 0; margin: 20px 0; }
+    #consent-screen .consent-choice-group legend { font-weight: bold; margin-bottom: 12px; }
+    #consent-screen .consent-choice-group label { margin: 12px 0; }
+    #consent-demographics { border: 0; padding: 0; margin: 0; }
     #consent-error { color: #a40000; }
   </style>
 </head>
@@ -368,21 +371,22 @@
   <div id="condition-indicator" class="condition-indicator hidden"></div>
 
   <div id="intro-screen" class="screen center-screen">
-    <form class="panel" onsubmit="submitParticipantId(event)">
+    <form id="participant-entry-form" class="panel" onsubmit="submitParticipantId(event)">
       <h1 id="experiment-title">Tracking and Fixation Experiment</h1>
-      <p>Enter your participant ID to begin.</p>
+      <p>Please enter your Prolific participant ID to begin.</p>
       <div class="field">
-        <label for="participant-id-input">Participant ID</label>
-        <input id="participant-id-input" autocomplete="off" required />
+        <label for="participant-id-input">Prolific_PID</label>
+        <input id="participant-id-input" name="Prolific_PID" autocomplete="off" maxlength="100" pattern="[A-Za-z0-9_-]{1,100}" required />
       </div>
-      <button class="primary-btn" type="submit">Continue</button>
+      <p id="participant-entry-error" role="alert"></p>
+      <button class="primary-btn" type="submit">Next</button>
     </form>
   </div>
 
   <div id="consent-screen" class="screen hidden">
     <div class="panel consent-panel">
       <article id="consent-document">
-        <!-- Transcribed from STUDY00007467 consent v3.docx; original wording retained. -->
+        <!-- Study information from STUDY00007467 consent v3.docx; online agreement uses an explicit radio choice. -->
         <h1><strong>You Are Being Asked to Be in a Research Study</strong></h1>
         <p><strong>Concise presentation of key concepts</strong></p>
         <p>You are being asked to be in a research study. A research study is designed to answer a scientific question. If you agree to be in the study, you will be one of 300 people above the age of 18 who are being studied at Emory. The study sessions lasts between 15 and 30 minutes.</p>
@@ -415,7 +419,7 @@
         <p>Before making your decision:</p>
         <p>Please carefully read this form or have it read to you</p>
         <p>Please ask questions about anything that is not clear</p>
-        <p>You may have a copy of this consent form to keep. Feel free to take your time thinking about whether you would like to participate. By signing this form you will not give up any legal rights.</p>
+        <p>You may have a copy of this consent form to keep. Feel free to take your time thinking about whether you would like to participate. By agreeing to participate you will not give up any legal rights.</p>
         <h2><u>What is the purpose of this study?</u></h2>
         <p>The purpose of this study is for us to see whether visual imagery can be detected by measuring your pupils’ responses. Pupils respond to light—for example, they constrict under bright light and dilate under dark light. In this study, we examine whether pupils respond in a similar way when only imagining light and dark objects. This study will help us learn about visual imagery and may ultimately be used to test the development of imagery in even young children, and among individuals who report not being able to engage in this important cognitive ability.</p>
         <h2><u>What will</u><u> you </u><u>be asked to do?</u></h2>
@@ -454,31 +458,40 @@
         <p>To tell the IRB about your experience as a research participant, fill out the Research Participant Survey at </p>
         <p><a href="https://tinyurl.com/ycewgkke" target="_blank" rel="noopener noreferrer">https://tinyurl.com/ycewgkke</a>.</p>
         <h2><u>Consent</u></h2>
-        <p><em><strong>TO BE FILLED OUT BY SUBJECT ONLY</strong></em></p>
-        <p><strong>P</strong><strong>rint</strong> your name, <strong>sign</strong>, and <strong>date</strong> below if you choose to be in this research study. You will not give up any of your legal rights by signing this form. </p>
         <form id="consent-form" onsubmit="submitConsent(event)">
-          <div class="field">
-            <label for="consent-name">Name of Subject</label>
-            <input id="consent-name" name="subject-name" autocomplete="name" maxlength="200" required />
-          </div>
-          <div class="field">
-            <label class="consent-agreement" for="consent-confirmed">
-              <input id="consent-confirmed" type="checkbox" required />
-              <span>I have read this consent form and agree to participate. I am 18 or older and able to consent. My typed name above serves as my signature.</span>
+          <fieldset class="consent-choice-group">
+            <legend>I have read and understood the information above and voluntarily agree to participate in this study.</legend>
+            <label class="consent-agreement" for="consent-agree">
+              <input id="consent-agree" type="radio" name="consent-choice" value="agree" required onchange="handleConsentChoiceChange()" />
+              <span>I agree to participate</span>
             </label>
-          </div>
-          <div class="consent-datetime">
-            <div class="field"><label for="consent-date">Date</label><input id="consent-date" type="date" required /></div>
-            <div class="field"><label for="consent-time">Time (local)</label><input id="consent-time" type="time" required /></div>
-          </div>
+            <label class="consent-agreement" for="consent-disagree">
+              <input id="consent-disagree" type="radio" name="consent-choice" value="disagree" required onchange="handleConsentChoiceChange()" />
+              <span>I do not agree to participate</span>
+            </label>
+          </fieldset>
+          <fieldset id="consent-demographics" class="hidden" disabled>
+            <div class="field">
+              <label for="consent-gender">Gender (optional)</label>
+              <select id="consent-gender" name="participant-gender">
+                <option value="" selected>Not specified</option>
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+                <option value="non-binary">Non-binary</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="consent-date-of-birth">Date of birth (optional; year, month, day)</label>
+              <input id="consent-date-of-birth" name="participant-date-of-birth" type="date" autocomplete="bday" />
+            </div>
+          </fieldset>
           <p id="consent-error" role="alert"></p>
           <p id="consent-upload-status" role="status" aria-live="polite"></p>
-          <p>Your consent will be uploaded to the study server. Please keep this page open until the upload is confirmed.</p>
-          <button class="primary-btn" type="submit">I agree — save consent and continue</button>
-          <button type="button" onclick="declineConsent()">I do not agree</button>
+          <p>Your consent will be saved when you click Next. Please keep this page open until saving is confirmed.</p>
+          <button id="consent-next-btn" class="primary-btn" type="submit" disabled>Next</button>
         </form>
       </article>
-      <p id="consent-declined" class="hidden" role="status">You have chosen not to participate. You may close this page.</p>
+      <p id="consent-declined" class="hidden" role="status">You have chosen not to participate. The study has ended. You may close this page and return to Prolific.</p>
     </div>
   </div>
 
@@ -556,6 +569,7 @@
     const breakScreen = document.getElementById("break-screen");
     const finishScreen = document.getElementById("finish-screen");
     const conditionIndicator = document.getElementById("condition-indicator");
+    const participantEntryError = document.getElementById("participant-entry-error");
     const participantIdInput = document.getElementById("participant-id-input");
     const readyTitle = document.getElementById("ready-title");
     const readyText = document.getElementById("ready-text");
@@ -652,7 +666,7 @@
     `;
     const APPS_SCRIPT_WEB_APP_URL = IS_DEMO_MODE
       ? ""
-      : "https://script.google.com/macros/s/AKfycbwOMq1cVd8Q-z6Zk-h4XaN8lDvvyQd-3l9SKcb8Gd4VHkieXCAl7PgkUzVgxuKyjk70/exec";
+      : "https://script.google.com/macros/s/AKfycbxL3J_b-A3tI8m-hgsYr70OOUn7X43lo2FTR1e--fJsnBPp76DBn3Nf_CMHDm_YxzMm/exec";
     const MAX_UPLOAD_ATTEMPTS = 5;
     const UPLOAD_RETRY_BASE_MS = 1000;
 
@@ -688,7 +702,12 @@
     let consentRecord = null;
     let consentUploading = false;
     let consentUploaded = false;
+    let consentDeclined = false;
     let participantId = "";
+    let prolificStudyId = "";
+    let prolificSessionId = "";
+    let participantGender = "";
+    let participantDateOfBirth = "";
     let runOrder = [];
     let experimentStartIso = "";
     let trials = [];
@@ -754,59 +773,124 @@
     let validationPointResults = [];
     let gazeCalibrationSummary = null;
 
+    function localDateString(date = new Date()) {
+      const pad = (value) => String(value).padStart(2, "0");
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    }
+
+    function readProlificParameter(parameters, name) {
+      const values = parameters.getAll(name);
+      if (values.length !== 1) return "";
+      const value = values[0].trim();
+      return /^[A-Za-z0-9_-]{1,100}$/.test(value) ? value : "";
+    }
+
+    function initializeParticipantEntry() {
+      const parameters = new URLSearchParams(window.location.search);
+      prolificStudyId = readProlificParameter(parameters, "STUDY_ID");
+      prolificSessionId = readProlificParameter(parameters, "SESSION_ID");
+      participantId = "";
+      participantIdInput.value = "";
+      participantEntryError.textContent = "";
+      document.getElementById("consent-date-of-birth").max = localDateString();
+      showScreen("intro");
+    }
+
     function submitParticipantId(event) {
-      if (event) {
-        event.preventDefault();
-      }
-
-      participantId = participantIdInput.value.trim();
-
-      if (!participantId) {
+      if (event) event.preventDefault();
+      if (consentDeclined || consentUploading || consentUploaded) return;
+      participantIdInput.value = participantIdInput.value.trim();
+      if (!document.getElementById("participant-entry-form").reportValidity()) return;
+      const value = participantIdInput.value;
+      if (!/^[A-Za-z0-9_-]{1,100}$/.test(value)) {
+        participantEntryError.textContent = "Please enter a valid Prolific_PID.";
         participantIdInput.focus();
         return;
       }
-
+      participantId = value;
+      participantEntryError.textContent = "";
       runOrder = Math.random() < 0.5
         ? ["tracking", "fixation"]
         : ["fixation", "tracking"];
       showScreen("consent");
-      const now = new Date();
-      const pad = (value) => String(value).padStart(2, "0");
-      document.getElementById("consent-date").value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-      document.getElementById("consent-time").value = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
       window.scrollTo(0, 0);
+    }
+
+    function isValidDateOfBirth(value) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+      const date = new Date(`${value}T00:00:00.000Z`);
+      return Number.isFinite(date.getTime()) &&
+        date.toISOString().slice(0, 10) === value && value <= localDateString();
+    }
+
+    function handleConsentChoiceChange(clearError = true) {
+      if (consentDeclined || consentUploading) return;
+      if (document.getElementById("consent-disagree").checked) {
+        declineConsent();
+        return;
+      }
+      const agreed = document.getElementById("consent-agree").checked;
+      const demographics = document.getElementById("consent-demographics");
+      demographics.disabled = !agreed;
+      demographics.classList.toggle("hidden", !agreed);
+      document.getElementById("consent-next-btn").disabled = !agreed;
+      if (clearError) document.getElementById("consent-error").textContent = "";
     }
 
     // Consent uses the same endpoint but is stored separately from behavioral/gaze data.
     async function submitConsent(event) {
       event.preventDefault();
-      if (consentUploading) return;
+      if (consentUploading || consentDeclined) return;
+      if (document.getElementById("consent-disagree").checked) {
+        declineConsent();
+        return;
+      }
+      if (!document.getElementById("consent-agree").checked) {
+        document.getElementById("consent-error").textContent = "Please select whether you agree to participate.";
+        return;
+      }
+      if (!participantId) {
+        participantEntryError.textContent = "Please enter your Prolific_PID before continuing.";
+        showScreen("intro");
+        participantIdInput.focus();
+        return;
+      }
       const form = document.getElementById("consent-form");
-      const name = document.getElementById("consent-name");
-      name.value = name.value.trim();
       if (!form.reportValidity()) return;
-      if (!document.getElementById("consent-confirmed").checked) {
-        document.getElementById("consent-error").textContent = "Please confirm your consent before continuing.";
-        document.getElementById("consent-confirmed").focus();
+      participantGender = document.getElementById("consent-gender").value;
+      participantDateOfBirth = document.getElementById("consent-date-of-birth").value;
+      if ((participantGender && !["female", "male", "non-binary"].includes(participantGender)) ||
+          (participantDateOfBirth && !isValidDateOfBirth(participantDateOfBirth))) {
+        document.getElementById("consent-error").textContent = "Gender and date of birth are optional. If provided, please use a listed gender and a valid date of birth that is not in the future.";
         return;
       }
       const documentCopy = document.getElementById("consent-document").cloneNode(true);
       documentCopy.querySelector("form").remove();
+      const agreedAt = new Date();
+      const pad = (value) => String(value).padStart(2, "0");
       const details = {
         payload_type: "consent",
         experiment_version: PROGRAM_VERSION,
         consent_text: documentCopy.textContent.trim(),
         participant_id: participantId,
         document_version: "STUDY00007467 consent v3.docx",
-        subject_name: name.value,
-        date_local: document.getElementById("consent-date").value,
-        time_local: document.getElementById("consent-time").value,
+        participant_gender: participantGender,
+        participant_date_of_birth: participantDateOfBirth,
+        prolific_study_id: prolificStudyId,
+        prolific_session_id: prolificSessionId,
+        date_local: localDateString(agreedAt),
+        time_local: `${pad(agreedAt.getHours())}:${pad(agreedAt.getMinutes())}`,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        signature_method: "typed_name",
+        consent_method: "radio_choice",
+        consent_choice: "agree",
+        consent_interface_version: "radio_choice_v1",
+        consent_statement: form.querySelector(".consent-choice-group legend").textContent.trim(),
         consent_confirmed: true
       };
       // Reuse the exact record after an ambiguous failure, including its ID/timestamp.
-      const unchanged = consentRecord && Object.keys(details).every((key) => consentRecord[key] === details[key]);
+      const unchanged = consentRecord && Object.keys(details)
+        .filter((key) => key !== "date_local" && key !== "time_local")
+        .every((key) => consentRecord[key] === details[key]);
       if (!unchanged) {
         const signedAt = new Date().toISOString();
         consentRecord = { ...details, signed_at_iso: signedAt,
@@ -814,7 +898,7 @@
       }
       consentUploading = true;
       consentUploaded = false;
-      const controls = form.querySelectorAll("input, button");
+      const controls = form.querySelectorAll("input, select, button");
       controls.forEach((control) => { control.disabled = true; });
       document.getElementById("consent-error").textContent = "";
       try {
@@ -832,6 +916,7 @@
       } finally {
         consentUploading = false;
         controls.forEach((control) => { control.disabled = false; });
+        handleConsentChoiceChange(false);
       }
     }
 
@@ -873,15 +958,27 @@
     }
 
     function declineConsent() {
+      if (consentUploading || consentDeclined) return;
+      consentDeclined = true;
+      consentUploaded = false;
       consentRecord = null;
+      participantGender = "";
+      participantDateOfBirth = "";
+      experimentRunning = false;
+      experimentCompleted = false;
+      currentPhase = "declined";
+      stopAnimation();
       document.getElementById("consent-form").reset();
-      document.getElementById("consent-form").classList.add("hidden");
+      document.getElementById("consent-document").classList.add("hidden");
       document.getElementById("consent-declined").classList.remove("hidden");
-      document.getElementById("consent-declined").scrollIntoView({ block: "center" });
+      showScreen("consent");
+      updateProlificCompletionStatus();
+      window.scrollTo(0, 0);
     }
 
     function startExperiment() {
-      if (!consentUploaded) return;
+      if (!consentUploaded || consentDeclined ||
+          !document.getElementById("consent-agree").checked) return;
       stopAnimation();
       responses = [];
       experimentCompleted = false;
@@ -1483,6 +1580,8 @@
 
       return {
         payload_type: "gaze",
+        prolific_study_id: prolificStudyId,
+        prolific_session_id: prolificSessionId,
         trial_id: trialId,
         session_id: sessionId,
         participant_id: participantId,
@@ -3239,6 +3338,10 @@
         practice_passed: "",
         mixed_practice_attempts_completed: mixedPracticeAttemptsCompleted,
         participant_id: participantId,
+        participant_gender: participantGender,
+        participant_date_of_birth: participantDateOfBirth,
+        prolific_study_id: prolificStudyId,
+        prolific_session_id: prolificSessionId,
         run_type: trial.runType,
         viewing_condition: trial.viewingCondition || "",
         condition_order: trial.runOrder,
@@ -3435,7 +3538,7 @@
     function canReturnToProlific() {
       return experimentCompleted &&
         formalCompletedTotal === TOTAL_TRIALS &&
-        consentUploaded && !consentUploading &&
+        consentUploaded && !consentUploading && !consentDeclined &&
         !IS_DEMO_MODE && Boolean(APPS_SCRIPT_WEB_APP_URL) &&
         responses.length > 0 &&
         pendingUploads === 0 && pendingGazeUploads === 0 &&
@@ -3690,6 +3793,7 @@
     document.addEventListener("click", handleInstructionClick);
     clearCanvas();
     updateStatus();
+    initializeParticipantEntry();
   </script>
 </body>
 </html>
