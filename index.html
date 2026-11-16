@@ -373,7 +373,7 @@
   <div id="intro-screen" class="screen center-screen">
     <form id="participant-entry-form" class="panel" onsubmit="submitParticipantId(event)">
       <h1 id="experiment-title">Tracking and Fixation Experiment</h1>
-      <p>Please enter your Prolific participant ID to begin.</p>
+      <p id="participant-entry-instructions">Please enter your Prolific participant ID to begin.</p>
       <div class="field">
         <label for="participant-id-input">Prolific_PID</label>
         <input id="participant-id-input" name="Prolific_PID" autocomplete="off" maxlength="100" pattern="[A-Za-z0-9_-]{1,100}" required />
@@ -666,7 +666,7 @@
     `;
     const APPS_SCRIPT_WEB_APP_URL = IS_DEMO_MODE
       ? ""
-      : "https://script.google.com/macros/s/AKfycbxL3J_b-A3tI8m-hgsYr70OOUn7X43lo2FTR1e--fJsnBPp76DBn3Nf_CMHDm_YxzMm/exec";
+      : "https://script.google.com/macros/s/AKfycbwoD5oldz3gsV2aT-3XH-V-31_VBeJf2SCX2E0VJMzdyBKOebVAiWCjXZC1LwIFJy0m/exec";
     const MAX_UPLOAD_ATTEMPTS = 5;
     const UPLOAD_RETRY_BASE_MS = 1000;
 
@@ -704,6 +704,7 @@
     let consentUploaded = false;
     let consentDeclined = false;
     let participantId = "";
+    let prolificPidFromUrl = "";
     let prolificStudyId = "";
     let prolificSessionId = "";
     let participantGender = "";
@@ -787,10 +788,15 @@
 
     function initializeParticipantEntry() {
       const parameters = new URLSearchParams(window.location.search);
+      prolificPidFromUrl = readProlificParameter(parameters, "PROLIFIC_PID");
       prolificStudyId = readProlificParameter(parameters, "STUDY_ID");
       prolificSessionId = readProlificParameter(parameters, "SESSION_ID");
       participantId = "";
-      participantIdInput.value = "";
+      participantIdInput.value = prolificPidFromUrl;
+      participantIdInput.readOnly = Boolean(prolificPidFromUrl);
+      document.getElementById("participant-entry-instructions").textContent = prolificPidFromUrl
+        ? "Your Prolific ID has been filled in. Click Next to continue."
+        : "Please enter your Prolific participant ID to begin.";
       participantEntryError.textContent = "";
       document.getElementById("consent-date-of-birth").max = localDateString();
       showScreen("intro");
@@ -799,7 +805,7 @@
     function submitParticipantId(event) {
       if (event) event.preventDefault();
       if (consentDeclined || consentUploading || consentUploaded) return;
-      participantIdInput.value = participantIdInput.value.trim();
+      participantIdInput.value = prolificPidFromUrl || participantIdInput.value.trim();
       if (!document.getElementById("participant-entry-form").reportValidity()) return;
       const value = participantIdInput.value;
       if (!/^[A-Za-z0-9_-]{1,100}$/.test(value)) {
@@ -873,6 +879,7 @@
         experiment_version: PROGRAM_VERSION,
         consent_text: documentCopy.textContent.trim(),
         participant_id: participantId,
+        prolific_pid: participantId,
         document_version: "STUDY00007467 consent v3.docx",
         participant_gender: participantGender,
         participant_date_of_birth: participantDateOfBirth,
@@ -1580,6 +1587,7 @@
 
       return {
         payload_type: "gaze",
+        prolific_pid: participantId,
         prolific_study_id: prolificStudyId,
         prolific_session_id: prolificSessionId,
         trial_id: trialId,
@@ -3338,6 +3346,7 @@
         practice_passed: "",
         mixed_practice_attempts_completed: mixedPracticeAttemptsCompleted,
         participant_id: participantId,
+        prolific_pid: participantId,
         participant_gender: participantGender,
         participant_date_of_birth: participantDateOfBirth,
         prolific_study_id: prolificStudyId,
