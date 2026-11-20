@@ -554,6 +554,12 @@
       <p>You may download the files below as local backups.</p>
       <button id="download-btn" class="download-btn" onclick="downloadData()" disabled>Download CSV</button>
       <button id="download-gaze-btn" class="download-btn hidden" onclick="downloadGazeData()" disabled>Download gaze JSONL</button>
+      <div id="qualtrics-backup-instructions" class="hidden">
+        <p><strong>If an upload fails or cannot be confirmed, please send us your data through Qualtrics.</strong></p>
+        <p>First, click <strong>Download CSV</strong> and <strong>Download gaze JSONL</strong> above to save both backup files. Then open the link below, upload both files, and submit the form. The form opens in a new tab so you can keep this experiment page open.</p>
+        <p><a href="https://ecas.qualtrics.emory.edu/jfe/form/SV_036qixOOf1WYe4m" target="_blank" rel="noopener noreferrer">Upload both backup files to Qualtrics</a></p>
+        <p>After submitting the form, contact the researcher through Prolific for help submitting your completion.</p>
+      </div>
     </div>
   </div>
 
@@ -586,6 +592,7 @@
     const prolificCompletionStatus = document.getElementById("prolific-completion-status");
     const prolificCompletionCode = document.getElementById("prolific-completion-code");
     const retryUploadsButton = document.getElementById("retry-uploads-btn");
+    const qualtricsBackupInstructions = document.getElementById("qualtrics-backup-instructions");
     const experimentTitle = document.getElementById("experiment-title");
     const gazePanel = document.getElementById("gaze-panel");
     const gazeTitle = document.getElementById("gaze-title");
@@ -3561,6 +3568,8 @@
       const ready = canReturnToProlific();
       const hasFailures = failedUploads.length > 0 || failedGazeUploads.length > 0;
       const uploadsPending = pendingUploads > 0 || pendingGazeUploads > 0;
+      qualtricsBackupInstructions.classList.toggle("hidden",
+        !experimentCompleted || ready || (!hasFailures && uploadsPending));
       prolificReturnButton.disabled = !ready;
       prolificCompletionCode.classList.toggle("hidden", !ready);
       prolificCompletionCode.textContent = ready
@@ -3572,11 +3581,11 @@
       if (ready) {
         prolificCompletionStatus.textContent = "All data have been saved. Click Return to Prolific to submit your completion.";
       } else if (experimentCompleted && hasFailures) {
-        prolificCompletionStatus.textContent = "Some data could not be saved. Please download both backups, check your connection, and retry failed uploads. If the problem continues, contact the researcher through Prolific for help submitting your completion.";
+        prolificCompletionStatus.textContent = "Some uploads failed. Please follow the backup instructions below to upload both data files to Qualtrics. You may also check your connection and retry failed uploads.";
       } else if (experimentCompleted && uploadsPending) {
         prolificCompletionStatus.textContent = "Saving your data. Please keep this page open until the Return to Prolific button is enabled.";
       } else if (experimentCompleted) {
-        prolificCompletionStatus.textContent = "We could not confirm that all experiment data were saved. Please download both backups and contact the researcher through Prolific for help submitting your completion.";
+        prolificCompletionStatus.textContent = "We could not confirm that all experiment data were saved. Please follow the backup instructions below to upload both data files to Qualtrics.";
       } else {
         prolificCompletionStatus.textContent = "Complete the experiment before returning to Prolific.";
       }
